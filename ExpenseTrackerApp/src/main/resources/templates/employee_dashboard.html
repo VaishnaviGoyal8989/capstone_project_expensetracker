@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            padding: 30px;
+        }
+        h2, h3 {
+            color: #34495e;
+            text-align: center;
+        }
+        a {
+            background-color: #34495e;
+            color: #fff;
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 5px;
+            float: right;
+        }
+        input, button {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #999;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        th {
+            background-color: #34495e;
+            color: #fff;
+            padding: 12px;
+            border: 1px solid #ccc;
+        }
+        td {
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .add-btn {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body style="margin: 0; padding: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; background-color: #34495e; padding-left: 10px;">
+        <h2 style="margin: 0; color: white;">Employee Dashboard</h2>
+        <button style="background-color: #34495e; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            <a th:href="@{/logout}" style="color: #ffffff; text-decoration: none; padding: 8px 16px;">Logout</a>
+        </button>
+    </div>
+
+    <!-- Add Expense Form -->
+    <h3>Add New Expense</h3>
+
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; 
+                box-shadow: 0 0 10px rgba(0,0,0,0.1); border: 1px solid #34495e; 
+                max-width: 450px; margin: 0 auto; text-align: center;">
+        <input type="text" id="expenseName" placeholder="Expense Name" required
+               style="width: 80%; margin-bottom: 15px; padding: 8px; border: 1px solid #34495e; border-radius: 5px;">
+
+        <input type="number" id="amount" placeholder="Amount" required
+               style="width: 80%; margin-bottom: 15px; padding: 8px; border: 1px solid #34495e; border-radius: 5px;">
+		
+        <select id="expenseType" required
+                style="width: 84%; margin-bottom: 15px; padding: 8px; border: 1px solid #34495e; border-radius: 5px;">
+            <option value="" disabled selected>Select Expense Type</option>
+            <option value="Hybrid">Hybrid</option>
+            <option value="Essential">Essential</option>
+            <option value="Discretionary">Discretionary</option>
+        </select>
+		
+
+        <input type="date" id="date" required
+               style="width: 80%; margin-bottom: 15px; padding: 8px; border: 1px solid #34495e; border-radius: 5px;">
+
+        <input type="text" id="receipt" placeholder="Receipt"
+               style="width: 80%; margin-bottom: 15px; padding: 8px; border: 1px solid #34495e; border-radius: 5px;">
+
+        <button class="add-btn" onclick="addExpense()"
+                style="width: 50%; padding: 10px; background-color: #34495e; color: #fff; 
+                       border: none; border-radius: 5px; cursor: pointer;">
+            Add Expense
+        </button>
+    </div>
+
+    <!-- Expense List Table -->
+    <h3>Expense List</h3>
+    <table id="expenseTable">
+        <tr>
+            <th>Expense Name</th><th>Amount</th><th>Department</th>
+            <th>Type</th><th>Date</th><th>Status</th><th>Receipt</th><th>Action</th>
+        </tr>
+    </table>
+
+	<script>
+		    // Fetch expenses for the employee
+		    function fetchExpenses() {
+		        console.log('Fetching expenses...');
+		        fetch('/employee/expenses')
+		            .then(res => res.json())
+		            .then(data => {
+		                console.log('Expenses fetched:', data);
+		                const table = document.getElementById("expenseTable");
+		                table.innerHTML = `
+		                    <tr>
+		                        <th>Expense Name</th><th>Amount</th><th>Department</th>
+		                        <th>Type</th><th>Date</th><th>Status</th><th>Receipt</th><th>Action</th>
+		                    </tr>`;
+		                data.forEach(exp => {
+		                    console.log('Rendering expense:', exp); 
+		                    table.innerHTML += `
+		                        <tr>
+		                            <td>${exp.expenseName}</td>
+		                            <td>${exp.amount}</td>
+		                            <td>${exp.department || '-'}</td>
+		                            <td>${exp.expenseType || '-'}</td>
+		                            <td>${exp.date || '-'}</td>
+		                            <td>${exp.status || '-'}</td>
+		                            <td>${exp.receipt || '-'}</td>
+		                            <td>
+		                                ${exp.status === 'Pending' ? 
+		                                    `<button onclick="deleteExpense(${exp.id})" 
+		                                             style="background-color: #e74c3c; color: white; padding: 8px 12px; border: none; border-radius: 5px;">Delete</button>` 
+		                                    : 'N/A'}
+		                            </td>
+		                        </tr>`;
+		                });
+		            })
+		            .catch(error => console.error('Error fetching expenses:', error)); 
+		    }
+
+		    // Add a new expense
+		    function addExpense() {
+		        const expense = {
+		            expenseName: document.getElementById("expenseName").value,
+		            amount: parseFloat(document.getElementById("amount").value),
+		            expenseType: document.getElementById("expenseType").value,
+		            date: document.getElementById("date").value,
+		            status: "Pending",
+		            receipt: document.getElementById("receipt").value
+		        };
+
+		        console.log('Adding expense:', expense); 
+
+		        fetch('/employee/add-expense', {
+		            method: 'POST',
+		            headers: { 'Content-Type': 'application/json' },
+		            body: JSON.stringify(expense)
+		        })
+		        .then(res => res.text())
+		        .then(msg => {
+		            console.log('Response from add expense:', msg); 
+		            alert(msg);
+		            
+		            document.getElementById("expenseName").value = '';
+		            document.getElementById("amount").value = '';
+		            document.getElementById("expenseType").value = '';
+		            document.getElementById("date").value = '';
+		            document.getElementById("receipt").value = '';
+		            fetchExpenses(); // Refresh the expense list
+		        })
+		        .catch(error => console.error('Error adding expense:', error)); 
+		    }
+
+		    // Delete an expense
+		    function deleteExpense(id) {
+		        console.log('Deleting expense with ID:', id); 
+		        fetch('/employee/delete-expense/' + id, { method: 'DELETE' })
+		            .then(res => res.text())
+		            .then(msg => {
+		                console.log('Response from delete expense:', msg); 
+		                alert(msg);
+		                fetchExpenses(); 
+		            })
+		            .catch(error => console.error('Error deleting expense:', error)); 
+		    }
+
+		    // Initial load of the expense list
+		    console.log('Initializing expense list...');
+		    fetchExpenses();
+		</script>
+</body>
+
+</html>
